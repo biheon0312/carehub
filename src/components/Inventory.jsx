@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import * as XLSX from 'xlsx';
 import { 
   Package, 
   AlertTriangle, 
@@ -7,7 +8,8 @@ import {
   Search, 
   ShoppingCart,
   Filter,
-  Star
+  Star,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,7 +26,7 @@ const Inventory = ({ highlightedMedicineId, setHighlightedMedicineId }) => {
     { id: 2, name: '어린이 타이레놀', category: '해열진통제', price: 12000, stock: 8, unit: '병', lowStockThreshold: 10, manufacturer: '한국얀센', expiryDate: '2026-08-15' },
     { id: 3, name: '게보린', category: '해열진통제', price: 6500, stock: 67, unit: '정', lowStockThreshold: 30, manufacturer: '삼진제약', expiryDate: '2027-03-20' },
     { id: 4, name: '펜잘', category: '해열진통제', price: 5800, stock: 82, unit: '정', lowStockThreshold: 30, manufacturer: '동화약품', expiryDate: '2026-11-10' },
-    { id: 5, name: '이지엔6', category: '해열진통제', price: 7200, unit: '정', stock: 15, lowStockThreshold: 20, manufacturer: '한독', expiryDate: '2027-01-25' },
+    { id: 5, name: '이지엔6', category: '해열진통제', price: 7200, stock: 15, unit: '정', lowStockThreshold: 20, manufacturer: '한독', expiryDate: '2027-01-25' },
     { id: 6, name: '판피린티정', category: '감기약', price: 9500, stock: 34, unit: '정', lowStockThreshold: 25, manufacturer: '동아제약', expiryDate: '2026-10-05' },
     { id: 7, name: '판콜에이내복액', category: '감기약', price: 8800, stock: 12, unit: '병', lowStockThreshold: 15, manufacturer: '동아제약', expiryDate: '2026-09-18' },
     { id: 8, name: '콜대원', category: '감기약', price: 7500, stock: 56, unit: '정', lowStockThreshold: 30, manufacturer: '대웅제약', expiryDate: '2027-02-14' },
@@ -136,6 +138,41 @@ const Inventory = ({ highlightedMedicineId, setHighlightedMedicineId }) => {
     );
   };
 
+  // 🆕 엑셀 내보내기 함수
+  const handleExportToExcel = () => {
+    const excelData = medicines.map(med => ({
+      '약품명': med.name,
+      '카테고리': med.category,
+      '제조사': med.manufacturer,
+      '재고': med.stock,
+      '단위': med.unit,
+      '단가': med.price,
+      '재고가치': med.price * med.stock,
+      '최소재고': med.lowStockThreshold,
+      '유효기한': med.expiryDate,
+      '재고상태': med.stock <= med.lowStockThreshold ? '부족' : '정상'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    ws['!cols'] = [
+      { wch: 20 }, { wch: 12 }, { wch: 12 }, { wch: 8 },
+      { wch: 6 }, { wch: 10 }, { wch: 12 }, { wch: 10 },
+      { wch: 12 }, { wch: 10 }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '재고현황');
+
+    const today = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `약국재고_${today}.xlsx`);
+
+    toast({
+      title: '✅ 엑셀 다운로드 완료',
+      description: `${medicines.length}개 품목이 저장되었습니다.`,
+    });
+  };
+
   const categories = ['all', '해열진통제', '감기약', '소화제', '항생제', '파스/연고', '비타민/영양제', '안약'];
 
   const filteredMedicines = medicines.filter(medicine => {
@@ -244,6 +281,17 @@ const Inventory = ({ highlightedMedicineId, setHighlightedMedicineId }) => {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* 🆕 엑셀 다운로드 버튼 */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleExportToExcel}
+          className="bg-green-600 hover:bg-green-700 text-white gap-2"
+        >
+          <Download className="w-4 h-4" />
+          엑셀로 내보내기
+        </Button>
       </div>
 
       {/* 약품 목록 - 모바일: 카드, 데스크탑: 테이블 */}

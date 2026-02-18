@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
@@ -7,6 +7,7 @@ import Chatbot from "./components/Chatbot";
 import Inventory from "./components/Inventory";
 import AIConsult from "./components/AIConsult";
 import PharmacyMap from "./components/PharmacyMap";
+import { initializeMedicines } from "./lib/medicineService";
 
 function App() {
   const [activeView, setActiveView] = useState("dashboard");
@@ -23,6 +24,21 @@ function App() {
     setIsLoggedIn(false);
     setUser(null);
   };
+
+  // 🔥 Firebase 초기 데이터 업로드 (최초 1회만 실행)
+  useEffect(() => {
+    const hasInitialized = localStorage.getItem('firebase_initialized');
+    
+    if (!hasInitialized) {
+      console.log('🚀 Firebase 초기 데이터 업로드 시작...');
+      initializeMedicines().then(() => {
+        localStorage.setItem('firebase_initialized', 'true');
+        console.log('✅ Firebase 초기 데이터 업로드 완료!');
+      }).catch((error) => {
+        console.error('❌ 초기 데이터 업로드 실패:', error);
+      });
+    }
+  }, []);
 
   return (
     <>
